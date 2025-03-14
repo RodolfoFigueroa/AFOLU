@@ -11,3 +11,5 @@ poetry install
 ```
 poetry run dagster dev
 ```
+
+3. Open the web UI in your browser (by default `http://localhost:3000).
