@@ -2,18 +2,11 @@ import ee
 
 import dagster as dg
 
-from afolu.assets.common import year_to_band_name
-from afolu.partitions import year_partitions
 from afolu.resources import AFOLUClassMapResource
 
 
 def class_mask_factory(class_name: str) -> dg.AssetsDefinition:
-    @dg.asset(
-        name=class_name,
-        key_prefix="class_mask",
-        partitions_def=year_partitions,
-        io_manager_key="ee_manager",
-    )
+    @dg.asset(name=class_name, key_prefix="class_mask", io_manager_key="ee_manager")
     def _asset(class_map_resource: AFOLUClassMapResource, glc30: ee.Image):
         label_list = getattr(class_map_resource, class_name)
         mask = glc30.eq(label_list[0])
@@ -54,7 +47,7 @@ def forest_secondary(forest_img: ee.Image, forest_primary_img: ee.Image):
     key_prefix="class_mask",
     io_manager_key="ee_manager",
 )
-def pastures(grassland_to_pasture_img: ee.Image, pasture_random_mask: ee.Image):
+def pasture(grassland_to_pasture_img: ee.Image, pasture_random_mask: ee.Image):
     return grassland_to_pasture_img.bitwiseAnd(pasture_random_mask)
 
 

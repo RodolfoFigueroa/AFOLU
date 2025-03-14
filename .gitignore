@@ -178,3 +178,4 @@ cython_debug/
 *.ipynb
 dagster/*
 !dagster/dagster.yaml
+figures/
