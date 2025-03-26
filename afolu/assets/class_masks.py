@@ -19,68 +19,72 @@ def class_mask_factory(class_name: str) -> dg.AssetsDefinition:
 
 @dg.asset(
     ins={
-        "forest_img": dg.AssetIn(["class_mask", "forest"]),
+        "forests_img": dg.AssetIn(["class_mask", "forests"]),
     },
     key_prefix="class_mask",
     io_manager_key="ee_manager",
 )
-def forest_primary(forest_img: ee.Image, forest_mask: ee.Image):
-    return forest_img.bitwiseAnd(forest_mask)
+def forests_primary(forests_img: ee.Image, forests_mask: ee.Image):
+    return forests_img.bitwiseAnd(forests_mask)
 
 
 @dg.asset(
     ins={
-        "forest_img": dg.AssetIn(["class_mask", "forest"]),
-        "forest_primary_img": dg.AssetIn(["class_mask", "forest_primary"]),
+        "forests_img": dg.AssetIn(["class_mask", "forests"]),
+        "forests_primary_img": dg.AssetIn(["class_mask", "forests_primary"]),
     },
     key_prefix="class_mask",
     io_manager_key="ee_manager",
 )
-def forest_secondary(forest_img: ee.Image, forest_primary_img: ee.Image):
-    return forest_img.bitwiseAnd(forest_primary_img.bitwiseNot())
+def forests_secondary(forests_img: ee.Image, forests_primary_img: ee.Image):
+    return forests_img.bitwiseAnd(forests_primary_img.bitwiseNot())
 
 
 @dg.asset(
     ins={
-        "grassland_to_pasture_img": dg.AssetIn(["class_mask", "grassland_to_pasture"]),
+        "grasslands_to_pastures_img": dg.AssetIn(
+            ["class_mask", "grasslands_to_pastures"]
+        ),
     },
     key_prefix="class_mask",
     io_manager_key="ee_manager",
 )
-def pasture(grassland_to_pasture_img: ee.Image, pasture_random_mask: ee.Image):
-    return grassland_to_pasture_img.bitwiseAnd(pasture_random_mask)
+def pastures(grasslands_to_pastures_img: ee.Image, pastures_random_mask: ee.Image):
+    return grasslands_to_pastures_img.bitwiseAnd(pastures_random_mask)
 
 
 @dg.asset(
     ins={
-        "grassland_to_pasture_img": dg.AssetIn(["class_mask", "grassland_to_pasture"]),
-        "grassland_img": dg.AssetIn(["class_mask", "grassland"]),
+        "grasslands_to_pastures_img": dg.AssetIn(
+            ["class_mask", "grasslands_to_pastures"]
+        ),
+        "grasslands_img": dg.AssetIn(["class_mask", "grasslands"]),
     },
     key_prefix="class_mask",
     io_manager_key="ee_manager",
 )
-def grassland_merged(
-    grassland_to_pasture_img: ee.Image,
-    grassland_img: ee.Image,
-    pasture_random_mask: ee.Image,
+def grasslands_merged(
+    grasslands_to_pastures_img: ee.Image,
+    grasslands_img: ee.Image,
+    pastures_random_mask: ee.Image,
 ):
-    return grassland_to_pasture_img.bitwiseAnd(
-        pasture_random_mask.bitwiseNot()
-    ).bitwiseOr(grassland_img)
+    return grasslands_to_pastures_img.bitwiseAnd(
+        pastures_random_mask.bitwiseNot()
+    ).bitwiseOr(grasslands_img)
 
 
 assets = [
     class_mask_factory(class_name)
     for class_name in (
-        "cropland",
-        "forest",
-        "grassland",
-        "grassland_to_pasture",
-        "wetland",
-        "mangrove",
-        "settlement",
+        "croplands",
+        "forests_mangroves",
+        "forests",
+        "grasslands",
+        "grasslands_to_pastures",
+        "wetlands",
+        "settlements",
         "flooded",
-        "shrubland",
+        "shrublands",
         "other",
     )
 ]

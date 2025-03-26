@@ -11,7 +11,7 @@ from afolu.managers import (
     NumPyManager,
     ShapelyManager,
 )
-from afolu.partitions import year_partitions
+from afolu.partitions import year_pair_partitions, year_partitions
 from afolu.resources import AFOLUClassMapResource, PathResource
 
 
@@ -45,6 +45,7 @@ defs = dg.Definitions(
         + dg.load_assets_from_modules([assets.class_masks], group_name="class_masks")
         + dg.load_assets_from_modules([assets.labels], group_name="labels")
         + dg.load_assets_from_modules([assets.transitions], group_name="transitions")
+        + dg.load_assets_from_modules([assets.areas], group_name="areas")
     ),
     resources=dict(
         class_map_resource=class_map_resource,
@@ -55,5 +56,6 @@ defs = dg.Definitions(
         numpy_manager=numpy_manager,
         shapely_manager=shapely_manager,
         year_partitions=year_partitions,
+        year_pair_partitions=year_pair_partitions,
     ),
 )

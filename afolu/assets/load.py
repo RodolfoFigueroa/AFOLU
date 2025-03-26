@@ -16,7 +16,7 @@ def glc30(bbox: ee.Geometry) -> ee.Image:
 
 
 @dg.asset(ins={"bbox": dg.AssetIn(["bbox", "ee"])}, io_manager_key="ee_manager")
-def forest_mask(bbox: ee.Geometry) -> ee.Image:
+def forests_mask(bbox: ee.Geometry) -> ee.Image:
     return (
         ee.ImageCollection("NASA/ORNL/global_forest_classification_2020/V1")
         .filterBounds(bbox)
@@ -29,7 +29,7 @@ def forest_mask(bbox: ee.Geometry) -> ee.Image:
 
 # pylint: disable=redefined-outer-name
 @dg.asset(ins={"bbox": dg.AssetIn(["bbox", "ee"])}, io_manager_key="ee_manager")
-def pasture_random_mask(bbox: ee.Geometry, glc30: ee.Image) -> ee.Image:
+def pastures_random_mask(bbox: ee.Geometry, glc30: ee.Image) -> ee.Image:
     proj = glc30.projection().getInfo()
     return (
         ee.Image.random(42)

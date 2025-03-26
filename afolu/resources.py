@@ -7,13 +7,13 @@ class PathResource(dg.ConfigurableResource):
 
 
 class AFOLUClassMapResource(dg.ConfigurableResource):
-    cropland: list[int]
-    forest: list[int]
-    grassland: list[int]
-    grassland_to_pasture: list[int]
-    wetland: list[int]
-    mangrove: list[int]
-    settlement: list[int]
+    croplands: list[int]
+    forests: list[int]
+    grasslands: list[int]
+    grasslands_to_pastures: list[int]
+    wetlands: list[int]
+    forests_mangroves: list[int]
+    settlements: list[int]
     flooded: list[int]
-    shrubland: list[int]
+    shrublands: list[int]
     other: list[int]

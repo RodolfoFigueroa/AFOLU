@@ -179,3 +179,4 @@ cython_debug/
 dagster/*
 !dagster/dagster.yaml
 figures/
+*.csv

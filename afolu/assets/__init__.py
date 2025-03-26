@@ -1,1 +1,1 @@
-from afolu.assets import bbox, class_masks, labels, load, transitions
+from afolu.assets import areas, bbox, class_masks, labels, load, transitions
