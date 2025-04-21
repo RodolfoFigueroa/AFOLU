@@ -1,10 +1,29 @@
-croplands = [10, 11, 12, 20]
-forests = [51, 52, 61, 62, 71, 72, 81, 82, 91, 92]
-grasslands_to_pastures = [130]
-grasslands = [140]
-wetlands = [181, 182, 183, 184, 186, 187]
-forests_mangroves = [185]
-settlements = [190]
-flooded = [210]
-other = [50, 150, 152, 153, 200, 201, 202, 220]
-shrublands = [120, 121, 122]
+[croplands]
+ranges = [[10, 20]]
+
+[flooded]
+ranges = [[210, 210]]
+
+[forests]
+ranges = [[51, 92]]
+
+[forests_mangroves]
+ranges = [[185, 185]]
+
+[grasslands]
+ranges = [[140, 140]]
+
+[grasslands_to_pastures]
+ranges = [[130, 130]]
+
+[other]
+ranges = [[150, 153], [200, 202], [50, 50], [220, 220]]
+
+[settlements]
+ranges = [[190, 190]]
+
+[shrublands]
+ranges = [[120, 122]]
+
+[wetlands]
+ranges = [[181, 184], [186, 187]]

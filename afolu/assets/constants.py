@@ -11,3 +11,5 @@ LABEL_LIST = (
     "shrublands",
     "wetlands",
 )
+
+REDUCE_SCALE = 100

@@ -1,80 +1,141 @@
 import ee
 
 import dagster as dg
+from afolu.resources import AFOLUClassMapResource, LabelResource
 
-from afolu.resources import AFOLUClassMapResource
 
+def class_mask_factory(top_prefix: str, class_name: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name=class_name,
+        key_prefix=[top_prefix, "class_mask"],
+        ins={
+            "bbox": dg.AssetIn([top_prefix, "bbox", "ee"]),
+            "glc30": dg.AssetIn([top_prefix, "glc30"]),
+        },
+        io_manager_key="ee_manager",
+        group_name=f"{top_prefix}_class_mask",
+    )
+    def _asset(
+        class_map_resource: AFOLUClassMapResource,
+        glc30: ee.image.Image,
+        bbox: ee.geometry.Geometry,
+    ) -> ee.image.Image:
+        label_spec: LabelResource = getattr(class_map_resource, class_name)
 
-def class_mask_factory(class_name: str) -> dg.AssetsDefinition:
-    @dg.asset(name=class_name, key_prefix="class_mask", io_manager_key="ee_manager")
-    def _asset(class_map_resource: AFOLUClassMapResource, glc30: ee.Image):
-        label_list = getattr(class_map_resource, class_name)
-        mask = glc30.eq(label_list[0])
-        for label in label_list[1:]:
-            mask = mask.bitwiseOr(glc30.eq(label))
+        mask = (
+            ee.image.Image.constant([0] * 23)
+            .rename([f"b{i}" for i in range(1, 24)])
+            .clip(bbox)
+        )
+
+        for label_range in label_spec.ranges:
+            if label_range[0] == label_range[1]:
+                temp_mask = glc30.eq(label_range[0])
+            else:
+                temp_mask = glc30.gte(label_range[0]).And(glc30.lte(label_range[1]))
+            mask = mask.Or(temp_mask)
+
         return mask
 
     return _asset
 
 
-@dg.asset(
-    ins={
-        "forests_img": dg.AssetIn(["class_mask", "forests"]),
-    },
-    key_prefix="class_mask",
-    io_manager_key="ee_manager",
-)
-def forests_primary(forests_img: ee.Image, forests_mask: ee.Image):
-    return forests_img.bitwiseAnd(forests_mask)
+def forests_primary_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="forests_primary",
+        key_prefix=[top_prefix, "class_mask"],
+        ins={
+            "forests_img": dg.AssetIn([top_prefix, "class_mask", "forests"]),
+            "forests_mask": dg.AssetIn([top_prefix, "forests_mask"]),
+        },
+        io_manager_key="ee_manager",
+        group_name=f"{top_prefix}_class_mask",
+    )
+    def _asset(
+        forests_img: ee.image.Image,
+        forests_mask: ee.image.Image,
+    ) -> ee.image.Image:
+        return forests_img.And(forests_mask)
+
+    return _asset
 
 
-@dg.asset(
-    ins={
-        "forests_img": dg.AssetIn(["class_mask", "forests"]),
-        "forests_primary_img": dg.AssetIn(["class_mask", "forests_primary"]),
-    },
-    key_prefix="class_mask",
-    io_manager_key="ee_manager",
-)
-def forests_secondary(forests_img: ee.Image, forests_primary_img: ee.Image):
-    return forests_img.bitwiseAnd(forests_primary_img.bitwiseNot())
+def forests_secondary_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="forests_secondary",
+        key_prefix=[top_prefix, "class_mask"],
+        ins={
+            "forests_img": dg.AssetIn([top_prefix, "class_mask", "forests"]),
+            "forests_primary_img": dg.AssetIn(
+                [top_prefix, "class_mask", "forests_primary"],
+            ),
+        },
+        io_manager_key="ee_manager",
+        group_name=f"{top_prefix}_class_mask",
+    )
+    def _asset(
+        forests_img: ee.image.Image,
+        forests_primary_img: ee.image.Image,
+    ) -> ee.image.Image:
+        return forests_img.And(forests_primary_img.Not())
+
+    return _asset
 
 
-@dg.asset(
-    ins={
-        "grasslands_to_pastures_img": dg.AssetIn(
-            ["class_mask", "grasslands_to_pastures"]
-        ),
-    },
-    key_prefix="class_mask",
-    io_manager_key="ee_manager",
-)
-def pastures(grasslands_to_pastures_img: ee.Image, pastures_random_mask: ee.Image):
-    return grasslands_to_pastures_img.bitwiseAnd(pastures_random_mask)
+def pastures_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="pastures",
+        key_prefix=[top_prefix, "class_mask"],
+        ins={
+            "grasslands_to_pastures_img": dg.AssetIn(
+                [top_prefix, "class_mask", "grasslands_to_pastures"],
+            ),
+            "pastures_random_mask": dg.AssetIn(
+                [top_prefix, "pastures_random_mask"],
+            ),
+        },
+        io_manager_key="ee_manager",
+        group_name=f"{top_prefix}_class_mask",
+    )
+    def _asset(
+        grasslands_to_pastures_img: ee.image.Image,
+        pastures_random_mask: ee.image.Image,
+    ) -> ee.image.Image:
+        return grasslands_to_pastures_img.And(pastures_random_mask)
+
+    return _asset
 
 
-@dg.asset(
-    ins={
-        "grasslands_to_pastures_img": dg.AssetIn(
-            ["class_mask", "grasslands_to_pastures"]
-        ),
-        "grasslands_img": dg.AssetIn(["class_mask", "grasslands"]),
-    },
-    key_prefix="class_mask",
-    io_manager_key="ee_manager",
-)
-def grasslands_merged(
-    grasslands_to_pastures_img: ee.Image,
-    grasslands_img: ee.Image,
-    pastures_random_mask: ee.Image,
-):
-    return grasslands_to_pastures_img.bitwiseAnd(
-        pastures_random_mask.bitwiseNot()
-    ).bitwiseOr(grasslands_img)
+def grasslands_merged_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="grasslands_merged",
+        key_prefix=[top_prefix, "class_mask"],
+        ins={
+            "grasslands_to_pastures_img": dg.AssetIn(
+                [top_prefix, "class_mask", "grasslands_to_pastures"],
+            ),
+            "grasslands_img": dg.AssetIn([top_prefix, "class_mask", "grasslands"]),
+            "pastures_random_mask": dg.AssetIn(
+                [top_prefix, "pastures_random_mask"],
+            ),
+        },
+        io_manager_key="ee_manager",
+        group_name=f"{top_prefix}_class_mask",
+    )
+    def _asset(
+        grasslands_to_pastures_img: ee.image.Image,
+        grasslands_img: ee.image.Image,
+        pastures_random_mask: ee.image.Image,
+    ) -> ee.image.Image:
+        return grasslands_to_pastures_img.And(
+            pastures_random_mask.Not(),
+        ).Or(grasslands_img)
+
+    return _asset
 
 
 assets = [
-    class_mask_factory(class_name)
+    class_mask_factory(top_prefix, class_name)
     for class_name in (
         "croplands",
         "forests_mangroves",
@@ -87,4 +148,14 @@ assets = [
         "shrublands",
         "other",
     )
+    for top_prefix in ("amazon", "mexico", "small")
+] + [
+    factory(top_prefix)
+    for factory in (
+        forests_primary_factory,
+        forests_secondary_factory,
+        pastures_factory,
+        grasslands_merged_factory,
+    )
+    for top_prefix in ("amazon", "mexico", "small")
 ]

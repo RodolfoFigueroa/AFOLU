@@ -1,7 +1,12 @@
-import ee
+from collections.abc import Sequence
 
+import ee
 import dagster as dg
 import pandas as pd
+import numpy as np
+
+from afolu.assets.constants import LABEL_LIST, REDUCE_SCALE
+from afolu.partitions import year_pair_partitions
 
 
 def year_to_band_name(year: int | str) -> str:
@@ -10,42 +15,122 @@ def year_to_band_name(year: int | str) -> str:
     return f"b{year - 1999}"
 
 
-@dg.op
-def reduce_image_by_area(img: ee.Image, bbox: ee.Geometry) -> dict:
-    transition_img = img.addBands(ee.Image.pixelArea()).select(["area", "class"])
-    reduced = transition_img.reduceRegion(
-        reducer=(ee.Reducer.sum().group(groupField=1, groupName="transition")),
-        scale=30,
-        geometry=bbox,
-    ).getInfo()
+def get_raster_area(raster: ee.image.Image, bbox: ee.geometry.Geometry) -> float:
+    band_names = raster.bandNames().getInfo()
 
-    return reduced
+    if not isinstance(band_names, Sequence):
+        err = "Band names should be a sequence."
+        raise TypeError(err)
 
+    band_count = len(band_names)
 
-@dg.op(out=dg.Out(io_manager_key="dataframe_manager"))
-def reduced_to_table(reduced: dict):
-    return (
-        pd.DataFrame(reduced["groups"])
-        .rename(columns={"sum": "total_area"})
-        .assign(transition=lambda df: df.transition.astype(int))
-        .set_index("transition")["total_area"]
-        .divide(1e6)
-        .sort_index()
+    if band_count != 1:
+        err = f"Expected 1 band, got {band_count} bands: {band_names}"
+        raise ValueError(err)
+
+    response = (
+        raster.rename(["band"])
+        .multiply(ee.image.Image.pixelArea())
+        .reduceRegion(
+            reducer=ee.reducer.Reducer.sum(),
+            scale=REDUCE_SCALE,
+            geometry=bbox,
+            maxPixels=int(1e10),
+        )
+        .getInfo()
+    )
+
+    if response is None:
+        err = "No data returned from reduceRegion."
+        raise ValueError(err)
+
+    return float(
+        response["band"],
     )
 
 
-def area_table_factory(
-    name: str, in_name: str, partitions_def: dg.PartitionsDefinition
-):
-    @dg.graph_asset(
-        name=name,
-        ins={
-            "transition_img": dg.AssetIn(in_name),
-            "bbox": dg.AssetIn(["bbox", "ee"]),
-        },
-        partitions_def=partitions_def,
+def transition_table_fixed_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="table_fixed",
+        key_prefix=[top_prefix, "transition"],
+        ins={"table": dg.AssetIn([top_prefix, "transition", "table"])},
+        partitions_def=year_pair_partitions,
+        io_manager_key="dataframe_manager",
+        group_name=f"{top_prefix}_transition",
     )
-    def _asset(transition_img: ee.Image, bbox: ee.Geometry):
-        return reduced_to_table(reduce_image_by_area(transition_img, bbox))
+    def _asset(table: pd.DataFrame) -> pd.DataFrame:
+        table = table.set_index("start")
+
+        for start in LABEL_LIST:
+            if start == "forests_primary":
+                continue
+
+            table.loc[start, "forests_secondary"] = np.nansum(
+                [
+                    table.loc[start, "forests_secondary"],
+                    table.loc[start, "forests_primary"],
+                ],
+            )
+            table.loc[start, "forests_primary"] = np.nan
+
+        return table.fillna(0)
+
+    return _asset
+
+
+def transition_table_frac_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="table_frac",
+        key_prefix=[top_prefix, "transition"],
+        ins={"cross_fixed": dg.AssetIn([top_prefix, "transition", "table_fixed"])},
+        partitions_def=year_pair_partitions,
+        io_manager_key="dataframe_manager",
+        group_name=f"{top_prefix}_transition",
+    )
+    def _asset(cross_fixed: pd.DataFrame) -> pd.DataFrame:
+        cross_fixed = cross_fixed.set_index("start")
+
+        zero_rows = cross_fixed.index[cross_fixed.sum(axis=1) == 0]
+        for elem in zero_rows:
+            cross_fixed.loc[elem, elem] = 1
+
+        return cross_fixed.divide(cross_fixed.sum(axis=1), axis=0)
+
+    return _asset
+
+
+def transition_cube_factory(top_prefix: str) -> dg.AssetsDefinition:
+    @dg.asset(
+        name="cube",
+        key_prefix=[top_prefix, "transition"],
+        ins={"table_frac_map": dg.AssetIn([top_prefix, "transition", "table_frac"])},
+        io_manager_key="dataframe_manager",
+        group_name=f"{top_prefix}_transition",
+    )
+    def _asset(table_frac_map: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        time_periods = [
+            f"{start_year}_{end_year}"
+            for start_year, end_year in zip(
+                range(2000, 2022), range(2001, 2023), strict=True
+            )
+        ]
+        time_period_map = {key: i for i, key in enumerate(time_periods)}
+
+        rows = []
+        for period in time_periods:
+            table = table_frac_map[period].set_index("start")
+            for start_label in sorted(LABEL_LIST):
+                for end_label in sorted(LABEL_LIST):
+                    rows.append(
+                        {  # noqa: PERF401
+                            "transition": f"pij_lndu_{start_label}_to_{end_label}",
+                            "time_period": time_period_map[period],
+                            "value": table.loc[start_label, end_label],
+                        }
+                    )
+
+        return pd.DataFrame(rows).pivot_table(
+            index="time_period", columns="transition", values="value"
+        )
 
     return _asset
