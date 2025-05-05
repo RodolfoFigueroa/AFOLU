@@ -19,6 +19,7 @@ dependencies = [
 dev = [
     "basedpyright>=1.29.1",
     "ipykernel>=6.29.5",
+    "pre-commit>=4.2.0",
 ]
 
 [tool.uv.sources]
