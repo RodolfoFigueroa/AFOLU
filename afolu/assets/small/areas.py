@@ -72,7 +72,7 @@ def area_raster(
 )
 def area_table(img: ee.image.Image, bbox: ee.geometry.Geometry) -> pd.DataFrame:
     transition_img: ee.image.Image = img.addBands(ee.image.Image.pixelArea()).select(
-        ["area", "class"]
+        ["area", "class"],
     )
 
     response = transition_img.reduceRegion(
@@ -86,15 +86,14 @@ def area_table(img: ee.image.Image, bbox: ee.geometry.Geometry) -> pd.DataFrame:
         err = "No data returned from reduceRegion."
         raise ValueError(err)
 
-    rows = []
-    for elem in response["groups"]:
-        if elem["transition"] != 0:
-            rows.append(
-                {  # noqa: PERF401
-                    "label": LABEL_LIST[elem["transition"] - 1],
-                    "area": float(elem["sum"]),
-                }
-            )
+    rows = [
+        {
+            "label": LABEL_LIST[elem["transition"] - 1],
+            "area": float(elem["sum"]),
+        }
+        for elem in response["groups"]
+        if elem["transition"] != 0
+    ]
 
     return pd.DataFrame(rows).set_index("label")
 

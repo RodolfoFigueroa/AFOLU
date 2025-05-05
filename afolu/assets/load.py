@@ -14,7 +14,7 @@ def glc30_factory(top_prefix: str) -> dg.AssetsDefinition:
     def _asset(bbox: ee.geometry.Geometry) -> ee.image.Image:
         return (
             ee.imagecollection.ImageCollection(
-                "projects/sat-io/open-datasets/GLC-FCS30D/annual"
+                "projects/sat-io/open-datasets/GLC-FCS30D/annual",
             )
             .filterBounds(bbox)
             .mode()
@@ -35,7 +35,7 @@ def forests_mask_factory(top_prefix: str) -> dg.AssetsDefinition:
     def _asset(bbox: ee.geometry.Geometry) -> ee.image.Image:
         return (
             ee.imagecollection.ImageCollection(
-                "NASA/ORNL/global_forest_classification_2020/V1"
+                "NASA/ORNL/global_forest_classification_2020/V1",
             )
             .filterBounds(bbox)
             .mode()

@@ -1,10 +1,10 @@
 from collections.abc import Sequence
 
 import ee
-import dagster as dg
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+import dagster as dg
 from afolu.assets.constants import LABEL_LIST, REDUCE_SCALE
 from afolu.partitions import year_pair_partitions
 
@@ -111,7 +111,9 @@ def transition_cube_factory(top_prefix: str) -> dg.AssetsDefinition:
         time_periods = [
             f"{start_year}_{end_year}"
             for start_year, end_year in zip(
-                range(2000, 2022), range(2001, 2023), strict=True
+                range(2000, 2022),
+                range(2001, 2023),
+                strict=True,
             )
         ]
         time_period_map = {key: i for i, key in enumerate(time_periods)}
@@ -121,16 +123,18 @@ def transition_cube_factory(top_prefix: str) -> dg.AssetsDefinition:
             table = table_frac_map[period].set_index("start")
             for start_label in sorted(LABEL_LIST):
                 for end_label in sorted(LABEL_LIST):
-                    rows.append(
-                        {  # noqa: PERF401
+                    rows.append(  # noqa: PERF401
+                        {
                             "transition": f"pij_lndu_{start_label}_to_{end_label}",
                             "time_period": time_period_map[period],
                             "value": table.loc[start_label, end_label],
-                        }
+                        },
                     )
 
         return pd.DataFrame(rows).pivot_table(
-            index="time_period", columns="transition", values="value"
+            index="time_period",
+            columns="transition",
+            values="value",
         )
 
     return _asset

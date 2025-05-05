@@ -4,9 +4,9 @@ import pandas as pd
 
 import dagster as dg
 from afolu.assets.common import (
+    transition_cube_factory,
     transition_table_fixed_factory,
     transition_table_frac_factory,
-    transition_cube_factory,
     year_to_band_name,
 )
 from afolu.assets.constants import LABEL_LIST
@@ -114,7 +114,7 @@ def transition_table(
     transition_label_map: dict[str, list[str]],
 ) -> pd.DataFrame:
     transition_img: ee.image.Image = raster.addBands(ee.image.Image.pixelArea()).select(
-        ["area", "class"]
+        ["area", "class"],
     )
 
     response = transition_img.reduceRegion(
@@ -128,14 +128,13 @@ def transition_table(
         err = "No data returned from reduceRegion."
         raise ValueError(err)
 
-    rows = []
-    for elem in response["groups"]:
-        rows.append(
-            {  # noqa: PERF401
-                "label": transition_label_map[str(elem["transition"])],
-                "area": float(elem["sum"]),
-            }
-        )
+    rows = [
+        {
+            "label": transition_label_map[str(elem["transition"])],
+            "area": float(elem["sum"]),
+        }
+        for elem in response["groups"]
+    ]
 
     out = (
         pd.DataFrame(rows)

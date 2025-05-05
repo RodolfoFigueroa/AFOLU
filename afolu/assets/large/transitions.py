@@ -4,9 +4,9 @@ import pandas as pd
 import dagster as dg
 from afolu.assets.common import (
     get_raster_area,
+    transition_cube_factory,
     transition_table_fixed_factory,
     transition_table_frac_factory,
-    transition_cube_factory,
     year_to_band_name,
 )
 from afolu.assets.constants import LABEL_LIST

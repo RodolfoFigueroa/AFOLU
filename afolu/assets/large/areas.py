@@ -19,7 +19,7 @@ def area_raster_factory(top_prefix: str) -> dg.AssetsDefinition:
         key_prefix=[top_prefix, "area"],
         ins=ins,
         partitions_def=dg.MultiPartitionsDefinition(
-            {"year": year_partitions, "label": label_partitions}
+            {"year": year_partitions, "label": label_partitions},
         ),
         io_manager_key="ee_manager",
         group_name=f"{top_prefix}_area",
@@ -72,7 +72,7 @@ def area_value_factory(top_prefix: str) -> dg.AssetsDefinition:
             {
                 "year": year_partitions,
                 "label": label_partitions,
-            }
+            },
         ),
         io_manager_key="text_manager",
         group_name=f"{top_prefix}_area",
@@ -102,10 +102,12 @@ def area_table_factory(top_prefix: str) -> dg.AssetsDefinition:
                     "label": label,
                     "year": int(year) - 2000,
                     "area": float(area) / 10_000,
-                }
+                },
             )
         return pd.DataFrame(rows).pivot_table(
-            index="label", columns="year", values="area"
+            index="label",
+            columns="year",
+            values="area",
         )
 
     return _asset

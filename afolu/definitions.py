@@ -43,7 +43,6 @@ with open("./id_map.toml", encoding="utf8") as f:
 spec_map = {}
 all_resources_map = {}
 for key, spec in config.items():
-
     resource = LabelResource(
         ranges=spec.get("ranges"),
     )
@@ -99,7 +98,7 @@ defs = dg.Definitions.merge(
                         assets.class_masks,
                         assets.load,
                     ],
-                )
+                ),
             )
         ),
         resources=dict(
