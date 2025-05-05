@@ -1,54 +1,45 @@
 [project]
 name = "afolu"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "RodolfoFigueroa",email = "4rodolfofigueroa2@gmail.com"}
-]
+description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.11"
 dependencies = [
-    "ipykernel (>=6.29.5,<7.0.0)",
-    "geopandas (>=1.0.1,<2.0.0)",
-    "earthengine-api (>=1.5.5,<2.0.0)",
-    "geemap (>=0.35.3,<0.36.0)",
-    "setuptools (>=76.0.0,<77.0.0)",
-    "geedim (>=1.9.0,<2.0.0)",
-    "dagster (>=1.10.4,<2.0.0)",
-    "dagster-webserver (>=1.10.4,<2.0.0)",
-    "toml (>=0.10.2,<0.11.0)",
-    "pre-commit (>=4.1.0,<5.0.0)",
-    "plotly (>=6.0.0,<7.0.0)",
-    "nbformat (>=5.10.4,<6.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)",
-    "mpl-chord-diagram (>=0.4.1,<0.5.0)",
-    "sisepuede @ git+https://github.com/jcsyme/sisepuede.git",
-    "rasterio (>=1.3.11,<1.4.0)",
-    "qpsolvers[open-source-solvers] (>=4.5.0,<5.0.0)",
+    "dagster>=1.10.12",
+    "dagster-webserver>=1.10.12",
+    "earthengine-api>=1.5.13",
+    "pandas>=2.2.3",
+    "pandas-stubs>=2.2.3.250308",
+    "seaborn>=0.13.2",
+    "sisepuede",
+    "toml>=0.10.2",
 ]
 
+[dependency-groups]
+dev = [
+    "basedpyright>=1.29.1",
+    "ipykernel>=6.29.5",
+]
 
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
+[tool.uv.sources]
+sisepuede = { git = "https://github.com/RodolfoFigueroa/sisepuede/" }
 
 [tool.dagster]
 module_name = "afolu.definitions"
-code_location_name = "afolu"
-[tool.poetry.group.dev.dependencies]
-basedpyright = "^1.28.5"
 
+[tool.uv]
+package = true
 
-[tool.basedpyright] 
-ignore = ["**/*.ipynb"]
+[tool.setuptools]
+packages = ["afolu"]
+
+[tool.basedpyright]
 typeCheckingMode = "standard"
-
+ignore = ["**/*.ipynb", "**/dagster/*"]
 
 [tool.ruff]
-line-length=88
-target-version = "py311"
+extend-exclude = ["**/dagster/*"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D101", "D102", "D103", "D104", "D107", "PTH123", "PD901", "PLR0913"]
+ignore = ["D", "PLR0913", "ANN003", "PD901", "PTH123"]
